@@ -5,34 +5,34 @@ app.use(express.json())
 const db = pgp('postgres://postgres:admin@localhost:5432/first-api');
 const port = 3000
 
-app.get('/recipes', async (req, res) => {
+app.get('/products', async (req, res) => {
   try {
-    const result = await db.manyOrNone('SELECT * FROM recipes."recipe"')
+    const result = await db.manyOrNone('SELECT * FROM products."product"')
     res.status(200).send(result)
   } catch {
-    res.status(500).send("Could not get the recipes")
+    res.status(500).send("Could not get the products")
   }
 })
 
-app.get('/recipes/:id', async (req, res) => {
+app.get('/products/:id', async (req, res) => {
   const id = req.params.id;
   if (!id) {
-    res.status(400).send("Missing recipe's id")
+    res.status(400).send("Missing product's id")
     return;
   }
   try {
-    const result = await db.oneOrNone('SELECT * FROM recipes."recipe" WHERE "recipe".id = $1', id)
+    const result = await db.oneOrNone('SELECT * FROM products."product" WHERE "product".id = $1', id)
     if (result !== null) {
       res.status(200).send(result)
     } else {
-      res.status(404).send("Recipe not found")
+      res.status(404).send("Product not found")
     }
   } catch {
-    res.status(500).send("Could not get the recipes")
+    res.status(500).send("Could not get the products")
   }
 })
 
-app.post('/recipes', async (req, res) => {
+app.post('/products', async (req, res) => {
   const body = req.body ?? null
   if (!body) {
     res.status(400).send("Missing body")
@@ -45,16 +45,16 @@ app.post('/recipes', async (req, res) => {
   }
   try {
     const result = await db.query(
-      'INSERT INTO recipes."recipe" (name, description, price, category) VALUES($1, $2, $3, $4) RETURNING *',
+      'INSERT INTO products."product" (name, description, price, category) VALUES($1, $2, $3, $4) RETURNING *',
       [name, description, price, category]
     )
     res.status(201).send(result)
   } catch {
-    res.status(500).send("Could not create the recipe")
+    res.status(500).send("Could not create the product")
   }
 })
 
-app.put('/recipes/:id', async (req, res) => {
+app.put('/products/:id', async (req, res) => {
   const id = req.params.id
   const body = req.body ?? null
   if (!body) {
@@ -67,18 +67,18 @@ app.put('/recipes/:id', async (req, res) => {
     return;
   }
   try {
-    const result = await db.oneOrNone('UPDATE recipes."recipe" SET name = $1, description = $2, price = $3, category = $4 WHERE "recipe".id = $5 RETURNING *;', [name, description, price, category, id])
+    const result = await db.oneOrNone('UPDATE products."product" SET name = $1, description = $2, price = $3, category = $4 WHERE "product".id = $5 RETURNING *;', [name, description, price, category, id])
      if (!result) {
-      res.status(404).send("Recipe not found")
+      res.status(404).send("Product not found")
       return
     }
     res.status(200).send(result)
   } catch {
-    res.status(500).send("Could not replace recipe")
+    res.status(500).send("Could not replace product")
   }
 })
 
-app.patch('/recipes/:id', async (req,res) => {
+app.patch('/products/:id', async (req,res) => {
   const id = req.params.id
   const body = req.body ?? null
   if (!body) {
@@ -87,7 +87,7 @@ app.patch('/recipes/:id', async (req,res) => {
   }
   const entries = Object.entries(body)
   if (entries.length === 0) {
-    res.status(422).send("Provide at least one recipe property")
+    res.status(422).send("Provide at least one product property")
     return;
   }
 
@@ -97,16 +97,34 @@ app.patch('/recipes/:id', async (req,res) => {
 
   try {
     const result = await db.oneOrNone(
-      `UPDATE recipes."recipe" SET ${changedProperties} WHERE "recipe".name = '${id}' RETURNING ${properties.join(', ')};`,
+      `UPDATE products."product" SET ${changedProperties} WHERE "product".name = '${id}' RETURNING ${properties.join(', ')};`,
       values
     )
     if (!result) {
-      res.status(404).send("Recipe not found")
+      res.status(404).send("Product not found")
       return
     }
     res.status(200).send(result)
   } catch {
-    res.status(500).send("Could not patch recipe")
+    res.status(500).send("Could not patch product")
+  }
+})
+
+app.delete('/products/:id', async (req, res) => {
+  const id = req.params.id;
+  if (!id) {
+    res.status(400).send("Missing product's id")
+    return;
+  }
+  try {
+    const result = await db.oneOrNone('DELETE FROM products."product" WHERE "product".id = $1 RETURNING id', id)
+    if (result !== null) {
+      res.status(204).send()
+    } else {
+      res.status(404).send("Product not found")
+    }
+  } catch {
+    res.status(500).send("Could not get the products")
   }
 })
 
